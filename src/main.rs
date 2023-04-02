@@ -12,9 +12,9 @@ struct Message {
     content: String,
 }
 
-#[derive(Serialize, Clone, Copy)]
+#[derive(Serialize, Clone)]
 struct ChatRequest<'a> {
-    messages: &'a Vec<Message>,
+    messages: Vec<Message>,
     model: &'a str,
     max_tokens: i32,
     temperature: f64,
@@ -39,6 +39,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let stdin = io::stdin();
     let mut reader = stdin.lock().lines();
 
+    let mut chat_history: Vec<(ChatRequest, ChatResponse)> = vec![];
+
     loop {
         print!("You: ");
         io::stdout().flush()?;
@@ -55,7 +57,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }];
 
         let chat_req = ChatRequest {
-            messages: &messages,
+            messages: messages.clone(),
             model: "gpt-3.5-turbo",
             max_tokens: 300,
             temperature: 0.7,
@@ -69,10 +71,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let resp = client.post(ENDPOINT)
             .header(header::AUTHORIZATION, format!("Bearer {}", api_key))
             .header(header::CONTENT_TYPE, "application/json")
-            .body(req_body)
+            .body(req_body.clone())
             .send()?;
         let resp_body: Value = resp.json()?;
+        
         let chat_resp: ChatResponse = serde_json::from_value(resp_body.clone())?;
+
+        chat_history.push((chat_req.clone(), chat_resp.clone()));
 
         if let Some(choice) = chat_resp.choices.first() {
             // TODO: make this into debug logging. Idea: make file in debug mode.
