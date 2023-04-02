@@ -50,11 +50,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             continue;
         }
 
+        
+        let messages: Vec<_>  = chat_history.iter()
+            .map(|(req, resp)| (req.messages.first().unwrap(), resp.choices.first().map(|o| &o.message).unwrap()))
+            .flat_map(|(req, resp)| vec![req, resp])
+            .collect();
 
-        let messages = vec![Message {
-            role: "user".to_string(),
-            content: input.trim().to_string(),
-        }];
+        messages.push(&Message{role: "user".to_string(), content: input.trim().to_string()});
 
         let chat_req = ChatRequest {
             messages: messages.clone(),
@@ -77,10 +79,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         
         let chat_resp: ChatResponse = serde_json::from_value(resp_body.clone())?;
 
-        chat_history.push((chat_req.clone(), chat_resp.clone()));
-
         if let Some(choice) = chat_resp.choices.first() {
             // TODO: make this into debug logging. Idea: make file in debug mode.
+            chat_history.push((chat_req.clone(), chat_resp.clone()));
             println!("GPT-3.5: {}", choice.message.content);
         } else {
             println!("Error: {:?}", resp_body);
