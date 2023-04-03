@@ -5,20 +5,25 @@ This doc contains planned and completed features
 ### Developer productivity
 > As a developer I want to be able to inspect the complete chat-gpt response in debug mode
 
-> As a developer I want to quickly enable debug logging/capabilities quickly
+> As a developer I want to quickly enable debug logging/capabilities quickly which enables me to see raw http responses and requests.
 
 > As a developer I need to be able to keep track of the used tokens and the tokens that are left in a chat
 
 
 ### User features
-> As a user I want to remember the client to remember the chat history, so that I can utilize the model correctly
+> [DONE] As a user I want to remember the client to remember the chat history, so that I can utilize the model correctly
 
 In the first iteration the history is only kept in memory and will be deleted after the program is closed.
 We store the complete requests and responses in json. No need to just store partial things.
 
 
-> As a user I want the history of a chat to be persisitent between sessionsi
+> As a user I want the history of a chat to be persisitent when closing asession so that I can continue a previous chat
 
+> As a user I want to clean a chat session
+
+> As a user I want to go back to old chat sessions
+
+> As a user I want to be able to quickly distinguish between the sessions I had in the past
 
 ### Notes
 

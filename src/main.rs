@@ -79,7 +79,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let chat_resp: ChatResponse = serde_json::from_value(resp_body.clone())?;
 
         if let Some(choice) = chat_resp.choices.first() {
-            // TODO: make this into debug logging. Idea: make file in debug mode.
             chat_history.push((chat_req.clone(), chat_resp.clone()));
             println!(" --- ");
             println!("GPT-3.5: {}\n --- ", choice.message.content);
