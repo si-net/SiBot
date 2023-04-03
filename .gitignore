@@ -1,1 +1,10 @@
-/target
+# Ignore all by default, so only relevant files are explicitly added to git in a whitelisting fashion.
+/*
+
+# Whitelist folders
+!/src
+
+# Whitelist files
+!.gitignore
+!Makefile
+!Cargo.toml
