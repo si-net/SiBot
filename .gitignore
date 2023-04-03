@@ -3,8 +3,10 @@
 
 # Whitelist folders
 !/src
+!/docs
 
 # Whitelist files
 !.gitignore
 !Makefile
 !Cargo.toml
+!README.md

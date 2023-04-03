@@ -1,0 +1,34 @@
+## Features
+This doc contains planned and completed features
+
+
+### Developer productivity
+> As a developer I want to be able to inspect the complete chat-gpt response in debug mode
+
+> As a developer I want to quickly enable debug logging/capabilities quickly
+
+> As a developer I need to be able to keep track of the used tokens and the tokens that are left in a chat
+
+
+### User features
+> As a user I want to remember the client to remember the chat history, so that I can utilize the model correctly
+
+In the first iteration the history is only kept in memory and will be deleted after the program is closed.
+We store the complete requests and responses in json. No need to just store partial things.
+
+
+> As a user I want the history of a chat to be persisitent between sessionsi
+
+
+### Notes
+
+Gerade in rust sah mein development prozess wie folgt aus: 
+* baue feature
+* compiler will nicht.
+* bei unbekannten fehlern: knall den fehler in chat gpt
+* copy paste den code von chatgpt
+* compile
+* nimm den fehler knall ihn in chatgpt
+* compile
+* rinse, repeat... 
+--> Das kann man auch einfach automatisieren. Im besten Falle drueckt man einfach nur noch enter der rest wird generiert :D
