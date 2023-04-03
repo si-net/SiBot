@@ -3,8 +3,10 @@ use serde::{Serialize, Deserialize};
 use serde_json::{self, Value};
 use reqwest::{self, header};
 use std::io::Write;
+use std::fs;
 
 const ENDPOINT: &str = "https://api.openai.com/v1/chat/completions";
+const CONTEXT_LOCATION: &str = "src/main.rs";
 
 #[derive(Serialize, Deserialize, Clone)]
 struct Message {
@@ -36,10 +38,32 @@ struct Choice {
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let api_key = read_api_key()?;
 
+    let mut chat_history: Vec<(Message, Message)> = vec![];
+
+    let chat_context = match fs::read_to_string(CONTEXT_LOCATION) {
+        Ok(contents) => contents.to_string(),
+        Err(e) => {
+            println!("Error reading chat context from file: {}", e);
+            "".to_string()
+        }
+    };
+
+    let message_containing_context = Message {
+        role : "user".to_string(), 
+        content: "Remember the following code. Don't do anything with it until my next promt yet. \n --- \n".to_owned() + &chat_context
+    };
+
+    let first_response = Message {
+        role : "system".to_string(),
+        content: "Alright, I won't do anything with the code yet. Just let me know what you would like me to do with it.".to_string()
+    };
+
+    let initial_interaction_to_establish_context = (message_containing_context, first_response);
+    chat_history.push(initial_interaction_to_establish_context);
+
+
     let stdin = io::stdin();
     let mut reader = stdin.lock().lines();
-
-    let mut chat_history: Vec<(ChatRequest, ChatResponse)> = vec![];
 
     loop {
         print!("You: ");
@@ -51,7 +75,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
 
         let mut messages: Vec<Message>  = chat_history.iter()
-            .map(|(req, resp)| (req.messages.first().unwrap(), resp.choices.first().map(|o| &o.message).unwrap()))
             .flat_map(|(req, resp)| vec![req.clone(), resp.clone()])
             .collect();
 
@@ -79,7 +102,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let chat_resp: ChatResponse = serde_json::from_value(resp_body.clone())?;
 
         if let Some(choice) = chat_resp.choices.first() {
-            chat_history.push((chat_req.clone(), chat_resp.clone()));
+            chat_history.push( (chat_req.messages.first().unwrap().clone(), choice.message.clone()) );
             println!(" --- ");
             println!("GPT-3.5: {}\n --- ", choice.message.content);
         } else {

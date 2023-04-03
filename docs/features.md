@@ -25,7 +25,11 @@ We store the complete requests and responses in json. No need to just store part
 
 > As a user I want to be able to quickly distinguish between the sessions I had in the past
 
-> As a user I want to quickly add files into a chat history so I can quickly get feedback on the contents of the file.
+> [DONE] As a user I want to be able to add a hardcoded code file as the context for my conversation
+
+> As a user I want to determine the location of the file that is set as the context of my conversation.
+
+> As a user I want to define the prompt that is send along with the context of my conversation, so that the context of the file can be arbitrary.
 
 > As a user I want dont want to manually select files that should be added to the context, I want that a whole project is present as the context in the LLM, so I can utilize the full power of the model.
 
