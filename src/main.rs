@@ -40,26 +40,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let mut chat_history: Vec<(Message, Message)> = vec![];
 
-    let chat_context = match fs::read_to_string(CONTEXT_LOCATION) {
-        Ok(contents) => contents.to_string(),
-        Err(e) => {
-            println!("Error reading chat context from file: {}", e);
-            "".to_string()
-        }
-    };
-
-    let message_containing_context = Message {
-        role : "user".to_string(), 
-        content: "Remember the following code. Don't do anything with it until my next promt yet. \n --- \n".to_owned() + &chat_context
-    };
-
-    let first_response = Message {
-        role : "system".to_string(),
-        content: "Alright, I won't do anything with the code yet. Just let me know what you would like me to do with it.".to_string()
-    };
-
-    let initial_interaction_to_establish_context = (message_containing_context, first_response);
-    chat_history.push(initial_interaction_to_establish_context);
+    let chat_context = load_context_from_file_and_return_as_messages();
+    chat_history.push(chat_context);
 
 
     let stdin = io::stdin();
@@ -118,3 +100,26 @@ fn read_api_key() -> Result<String, Box<dyn std::error::Error>> {
     Ok(api_key_bytes.trim().to_string())
 }
 
+// the context is established by loading the file that is the context and creating a 'user' message
+// from it. We also add a placeholder response from the system to it so we keep req/resp pairs.'
+ fn load_context_from_file_and_return_as_messages() -> (Message, Message) {
+    let context_text = match fs::read_to_string(CONTEXT_LOCATION) {
+        Ok(text) => text,
+        Err(e) => {
+            println!("Error reading chat context from file: {}", e);
+            String::new()
+        }
+    };
+
+    let message_with_context = Message {
+        role: "user".to_string(),
+        content: format!("Remember the following code. Don't do anything with it until my next prompt yet.\n\n---\n\n{}", context_text)
+    };
+
+    let first_response = Message {
+        role: "system".to_string(),
+        content: "Alright, I won't do anything with the code yet. Just let me know what you would like me to do with it.".to_string()
+    };
+
+    (message_with_context, first_response)
+}
