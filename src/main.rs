@@ -13,9 +13,9 @@ struct Message {
 }
 
 #[derive(Serialize, Clone)]
-struct ChatRequest<'a> {
+struct ChatRequest {
     messages: Vec<Message>,
-    model: &'a str,
+    model: String,
     max_tokens: i32,
     temperature: f64,
     top_p: f64,
@@ -50,17 +50,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             continue;
         }
 
-        
-        let messages: Vec<_>  = chat_history.iter()
+        let mut messages: Vec<Message>  = chat_history.iter()
             .map(|(req, resp)| (req.messages.first().unwrap(), resp.choices.first().map(|o| &o.message).unwrap()))
-            .flat_map(|(req, resp)| vec![req, resp])
+            .flat_map(|(req, resp)| vec![req.clone(), resp.clone()])
             .collect();
 
-        messages.push(&Message{role: "user".to_string(), content: input.trim().to_string()});
+        messages.push(Message{role: "user".to_string(), content: input.trim().to_string()});
 
         let chat_req = ChatRequest {
-            messages: messages.clone(),
-            model: "gpt-3.5-turbo",
+            messages: messages,
+            model: "gpt-3.5-turbo".to_string(),
             max_tokens: 300,
             temperature: 0.7,
             top_p: 1.0,
@@ -82,7 +81,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         if let Some(choice) = chat_resp.choices.first() {
             // TODO: make this into debug logging. Idea: make file in debug mode.
             chat_history.push((chat_req.clone(), chat_resp.clone()));
-            println!("GPT-3.5: {}", choice.message.content);
+            println!(" --- ");
+            println!("GPT-3.5: {}\n --- ", choice.message.content);
         } else {
             println!("Error: {:?}", resp_body);
         }
