@@ -25,6 +25,10 @@ We store the complete requests and responses in json. No need to just store part
 
 > As a user I want to be able to quickly distinguish between the sessions I had in the past
 
+> As a user I want to quickly add files into a chat history so I can quickly get feedback on the contents of the file.
+
+> As a user I want dont want to manually select files that should be added to the context, I want that a whole project is present as the context in the LLM, so I can utilize the full power of the model.
+
 ### Notes
 
 Gerade in rust sah mein development prozess wie folgt aus: 
