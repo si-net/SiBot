@@ -33,6 +33,14 @@ We store the complete requests and responses in json. No need to just store part
 
 > As a user I want dont want to manually select files that should be added to the context, I want that a whole project is present as the context in the LLM, so I can utilize the full power of the model.
 
+> As a user I want to my git commits / file changes to be of high quality. Feature Idea: Leverage LLMs for this: THe LLM would run on each git diff or git commi and enhance the code 
+
+
+## Tech & Architecture related
+
+> Look into openAI embeddings for the file context. Apparently embedding are a cheaper way of getting 'context' to a chat. The text (files) that the user wants to work with would be somehow tokenized and pre trained and embedded into the openai model, I don't really undestsand yet how this works. The benefit is that this is chaper, consumes no token limit and ..
+
+
 ### Notes
 
 Gerade in rust sah mein development prozess wie folgt aus: 
