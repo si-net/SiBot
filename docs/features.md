@@ -3,9 +3,13 @@ This doc contains planned and completed features
 
 
 ### Developer productivity
-> As a developer I want to be able to inspect the complete chat-gpt response in debug mode
+> [IN Progress] As a developer I want to be able to inspect the complete chat-gpt response in debug mode
 
-> As a developer I want to quickly enable debug logging/capabilities quickly which enables me to see raw http responses and requests.
+Debug logging is required for this, see below
+
+> [In Progress ]As a developer I want to quickly enable debug logging/capabilities quickly which enables me to see raw http responses and requests.
+
+I need to reserach how to do debug logging in rust correctly and make use of it than, I also need to research how this logging is enabled and disbaled.
 
 > As a developer I need to be able to keep track of the used tokens and the tokens that are left in a chat
 
@@ -35,6 +39,7 @@ We store the complete requests and responses in json. No need to just store part
 
 > As a user I want to my git commits / file changes to be of high quality. Feature Idea: Leverage LLMs for this: THe LLM would run on each git diff or git commi and enhance the code 
 
+> As a user I want a session not to crash because the max token limit is exceeded
 
 ## Tech & Architecture related
 
