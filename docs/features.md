@@ -3,13 +3,13 @@ This doc contains planned and completed features
 
 
 ### Developer productivity
-> [IN Progress] As a developer I want to be able to inspect the complete chat-gpt response in debug mode
+> [DONE] As a developer I want to be able to inspect the complete chat-gpt response in debug mode
 
-Debug logging is required for this, see below
+Debug mode is enabled by the rust env_logger. Improvement would be sl4rs, but not needed yet. To run in debug mode see the make file. 
 
-> [In Progress ]As a developer I want to quickly enable debug logging/capabilities quickly which enables me to see raw http responses and requests.
+> [DONE ]As a developer I want to quickly enable debug logging/capabilities quickly which enables me to see raw http responses and requests.
 
-I need to reserach how to do debug logging in rust correctly and make use of it than, I also need to research how this logging is enabled and disbaled.
+Debug mode is enabled by rust logging framework and env variable 'RUST_LOG'. Added convenience method to makefile to quickly debug chat bot.
 
 > As a developer I need to be able to keep track of the used tokens and the tokens that are left in a chat
 

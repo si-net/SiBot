@@ -24,6 +24,12 @@ or
 cargo run
 ```
 
+For **debugging** run
+
+```
+make debug
+```
+
 
 ## Contributing
 This project is open to contributions. Feel free to submit a pull request or open an issue if you have any suggestions or find any bugs.

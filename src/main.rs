@@ -4,6 +4,9 @@ use serde_json::{self, Value};
 use reqwest::{self, header};
 use std::io::Write;
 use std::fs;
+#[macro_use]
+extern crate log;
+extern crate env_logger;
 
 const ENDPOINT: &str = "https://api.openai.com/v1/chat/completions";
 const CONTEXT_LOCATION: &str = "src/main.rs";
@@ -36,7 +39,11 @@ struct Choice {
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+   
+    env_logger::init();
+
     let api_key = read_api_key()?;
+    debug!("api key: {}", api_key);
 
     let mut chat_history: Vec<(Message, Message)> = vec![];
 
@@ -48,7 +55,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut reader = stdin.lock().lines();
 
     loop {
-        print!("You: ");
+        println!("You: ");
         io::stdout().flush()?;
         let input = reader.next().unwrap()?;
         let input = input.trim();
@@ -79,6 +86,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             .header(header::CONTENT_TYPE, "application/json")
             .body(req_body.clone())
             .send()?;
+        
+        debug!("{:?}", resp);
+
         let resp_body: Value = resp.json()?;
         
         let chat_resp: ChatResponse = serde_json::from_value(resp_body.clone())?;
@@ -88,7 +98,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             println!(" --- ");
             println!("GPT-3.5: {}\n --- ", choice.message.content);
         } else {
-            println!("Error: {:?}", resp_body);
+            error!("Error: {:?}", resp_body);
         }
     }
 
@@ -106,7 +116,7 @@ fn read_api_key() -> Result<String, Box<dyn std::error::Error>> {
     let context_text = match fs::read_to_string(CONTEXT_LOCATION) {
         Ok(text) => text,
         Err(e) => {
-            println!("Error reading chat context from file: {}", e);
+            error!("Error reading chat context from file: {}", e);
             String::new()
         }
     };
