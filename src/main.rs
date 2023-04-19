@@ -60,7 +60,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let stdin = io::stdin();
     let mut reader = stdin.lock().lines();
 
-    // main program loop. Exchange user input and responses from the LLM.
+    // main program loop: exchanges messages between user and LLM.
     loop {
         println!("You: ");
         io::stdout().flush()?;
