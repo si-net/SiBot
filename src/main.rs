@@ -11,7 +11,7 @@ extern crate env_logger;
 const ENDPOINT: &str = "https://api.openai.com/v1/chat/completions";
 const CONTEXT_LOCATION: &str = "/Users/simonschaefer/dev/ai-projects/chat-bot/src/main.rs";
 
-// Represents the  message that the client and the LLM exchange.
+// Represents the  messages that the client and the LLM (Large Language Model) exchange.
 #[derive(Serialize, Deserialize, Clone)]
 struct Message {
     // who sent the message. The 'user' or the 'system', aka the LLM.
@@ -69,10 +69,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             continue;
         }
 
+        // The chathistory is a list of request and response Message pairs. We need to flatten it.
         let mut messages: Vec<Message>  = chat_history.iter()
             .flat_map(|(req, resp)| vec![req.clone(), resp.clone()])
             .collect();
 
+        // push the user input ontop of the message stack.
         messages.push(Message{role: "user".to_string(), content: input.trim().to_string()});
 
         let chat_req = ChatRequest {
