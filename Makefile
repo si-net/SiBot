@@ -6,3 +6,7 @@ debug:
 
 build:
 	cargo build
+
+release:
+	cargo build
+	cp target/debug/chat-bot ~/bin/si-net
