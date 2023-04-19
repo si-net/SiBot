@@ -9,7 +9,7 @@ extern crate log;
 extern crate env_logger;
 
 const ENDPOINT: &str = "https://api.openai.com/v1/chat/completions";
-const CONTEXT_LOCATION: &str = "src/main.rs";
+const CONTEXT_LOCATION: &str = "/Users/simonschaefer/dev/ai-projects/chat-bot/src/main.rs";
 
 #[derive(Serialize, Deserialize, Clone)]
 struct Message {
