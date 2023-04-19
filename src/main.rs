@@ -62,6 +62,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // main program loop: exchanges messages between user and LLM.
     loop {
+        // wait for user input.
         println!("You: ");
         io::stdout().flush()?;
         let input = reader.next().unwrap()?;
@@ -70,16 +71,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             continue;
         }
 
-        // The chathistory is a list of request and response Message pairs. We need to flatten it.
-        let mut messages: Vec<Message>  = chat_history.iter()
+        // add previously sent messages to the chat.
+        let mut chat: Vec<Message>  = chat_history.iter()
             .flat_map(|(req, resp)| vec![req.clone(), resp.clone()])
             .collect();
 
-        // push the user input ontop of the message stack.
-        messages.push(Message{role: "user".to_string(), content: input.trim().to_string()});
+        // add new user input to chat.
+        chat.push(Message{role: "user".to_string(), content: input.trim().to_string()});
 
         let chat_req = ChatRequest {
-            messages: messages,
+            messages: chat,
             model: "gpt-3.5-turbo".to_string(),
             max_tokens: 300,
             temperature: 0.7,
