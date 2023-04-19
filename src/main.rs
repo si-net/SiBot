@@ -11,14 +11,18 @@ extern crate env_logger;
 const ENDPOINT: &str = "https://api.openai.com/v1/chat/completions";
 const CONTEXT_LOCATION: &str = "/Users/simonschaefer/dev/ai-projects/chat-bot/src/main.rs";
 
+// Represents the  message that the client and the LLM exchange.
 #[derive(Serialize, Deserialize, Clone)]
 struct Message {
+    // who sent the message. The 'user' or the 'system', aka the LLM.
     role: String,
     content: String,
 }
 
+// API request
 #[derive(Serialize, Clone)]
 struct ChatRequest {
+    // all messages the LLM should interpret.
     messages: Vec<Message>,
     model: String,
     max_tokens: i32,
@@ -28,6 +32,7 @@ struct ChatRequest {
     presence_penalty: f64,
 }
 
+// API response
 #[derive(Deserialize, Clone)]
 struct ChatResponse {
     choices: Vec<Choice>,
@@ -45,8 +50,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let api_key = read_api_key()?;
     debug!("api key: {}", api_key);
 
+    // the chatgpt api is stateless and does not have any context of previous messages. Therefore
+    // the client needs to keep track of the state and add previous messages to each request.
     let mut chat_history: Vec<(Message, Message)> = vec![];
-
     let chat_context = load_context_from_file_and_return_as_messages();
     chat_history.push(chat_context);
 
