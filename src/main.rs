@@ -96,11 +96,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             .header(header::CONTENT_TYPE, "application/json")
             .body(req_body.clone())
             .send()?;
-        
-        debug!("{:?}", resp);
 
         let resp_body: Value = resp.json()?;
-        
+       
+        debug!("{:?}", resp_body);
+
         let chat_resp: ChatResponse = serde_json::from_value(resp_body.clone())?;
 
         if let Some(choice) = chat_resp.choices.first() {
