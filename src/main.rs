@@ -82,7 +82,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let chat_req = ChatRequest {
             messages: chat,
             model: "gpt-3.5-turbo".to_string(),
-            max_tokens: 300,
+            max_tokens: 1000,
             temperature: 0.7,
             top_p: 1.0,
             frequency_penalty: 0.0,
