@@ -50,6 +50,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let api_key = read_api_key()?;
     debug!("api key: {}", api_key);
 
+    let client = reqwest::blocking::Client::builder()
+        .timeout(std::time::Duration::from_secs(180))
+        .build()?;
+
     // the chatgpt api is stateless and does not have any context of previous messages. Therefore
     // the client needs to keep track of the state and add previous messages to each request.
     let mut chat_history: Vec<(Message, Message)> = vec![];
@@ -81,7 +85,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         let chat_req = ChatRequest {
             messages: chat,
-            model: "gpt-3.5-turbo".to_string(),
+            model: "gpt-4".to_string(),
             max_tokens: 1000,
             temperature: 0.7,
             top_p: 1.0,
@@ -90,7 +94,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         };
         let req_body = serde_json::to_string(&chat_req)?;
 
-        let client = reqwest::blocking::Client::new();
         let resp = client.post(ENDPOINT)
             .header(header::AUTHORIZATION, format!("Bearer {}", api_key))
             .header(header::CONTENT_TYPE, "application/json")
@@ -106,7 +109,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         if let Some(choice) = chat_resp.choices.first() {
             chat_history.push( (chat_req.messages.first().unwrap().clone(), choice.message.clone()) );
             println!(" --- ");
-            println!("GPT-3.5: {}\n --- ", choice.message.content);
+            println!("GPT-4-32k: {}\n --- ", choice.message.content);
         } else {
             error!("Error: {:?}", resp_body);
         }
