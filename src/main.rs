@@ -86,21 +86,9 @@ async fn main() -> Result<()> {
         // add new user input to chat.
         chat.push(Message{role: "user".to_string(), content: input.trim().to_string()});
 
-        let chat_req = ChatRequest {
-            messages: chat,
-            model: "gpt-4".to_string(),
-            max_tokens: 1000,
-            temperature: 0.7,
-            top_p: 1.0,
-            frequency_penalty: 0.0,
-            presence_penalty: 0.0,
-        };
-        let req_body = serde_json::to_string(&chat_req)?;
-        
         let response = client
             .send_message(input.trim().to_string())
             .await?;
-
 
         // debug!("{:?}", resp_body);
 
