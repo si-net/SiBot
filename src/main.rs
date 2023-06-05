@@ -4,6 +4,9 @@ use serde_json::{self, Value};
 use reqwest::{self, header};
 use std::io::Write;
 use std::fs;
+use chatgpt::prelude::*;
+use tokio::*;
+
 #[macro_use]
 extern crate log;
 extern crate env_logger;
@@ -43,17 +46,17 @@ struct Choice {
     message: Message,
 }
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
-   
+
+#[tokio::main]
+async fn main() -> Result<()> {
+
     env_logger::init();
 
     let api_key = read_api_key()?;
     debug!("api key: {}", api_key);
 
-    let client = reqwest::blocking::Client::builder()
-        .timeout(std::time::Duration::from_secs(180))
-        .build()?;
-
+    let client = ChatGPT::new(api_key)?;
+    
     // the chatgpt api is stateless and does not have any context of previous messages. Therefore
     // the client needs to keep track of the state and add previous messages to each request.
     let mut chat_history: Vec<(Message, Message)> = vec![];
@@ -93,31 +96,21 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             presence_penalty: 0.0,
         };
         let req_body = serde_json::to_string(&chat_req)?;
+        
+        let response = client
+            .send_message(input.trim().to_string())
+            .await?;
 
-        let resp = client.post(ENDPOINT)
-            .header(header::AUTHORIZATION, format!("Bearer {}", api_key))
-            .header(header::CONTENT_TYPE, "application/json")
-            .body(req_body.clone())
-            .send()?;
 
-        let resp_body: Value = resp.json()?;
-       
-        debug!("{:?}", resp_body);
+        // debug!("{:?}", resp_body);
 
-        let chat_resp: ChatResponse = serde_json::from_value(resp_body.clone())?;
-
-        if let Some(choice) = chat_resp.choices.first() {
-            chat_history.push( (chat_req.messages.first().unwrap().clone(), choice.message.clone()) );
-            println!(" --- ");
-            println!("GPT-4-32k: {}\n --- ", choice.message.content);
-        } else {
-            error!("Error: {:?}", resp_body);
-        }
+        println!(" --- ");
+        println!("GPT-4-32k: {}\n --- ", response.message().content);
     }
 
 }
 
-fn read_api_key() -> Result<String, Box<dyn std::error::Error>> {
+fn read_api_key() -> Result<String> {
     let api_key_file = std::env::var("HOME")? + "/dev/GPT-KEY";
     let api_key_bytes = std::fs::read_to_string(api_key_file)?;
     Ok(api_key_bytes.trim().to_string())
