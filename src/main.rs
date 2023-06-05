@@ -2,10 +2,11 @@ use std::io::{self, BufRead};
 use serde::{Serialize, Deserialize};
 use serde_json::{self, Value};
 use reqwest::{self, header};
-use std::io::Write;
+use std::io::{stdout, Write};
 use std::fs;
 use chatgpt::prelude::*;
 use tokio::*;
+use futures_util::StreamExt;
 
 #[macro_use]
 extern crate log;
@@ -55,7 +56,12 @@ async fn main() -> Result<()> {
     let api_key = read_api_key()?;
     debug!("api key: {}", api_key);
 
-    let client = ChatGPT::new(api_key)?;
+    let config = ModelConfiguration {
+        engine: ChatGPTEngine::Gpt4,
+        ..Default::default()
+    };
+
+    let client = ChatGPT::new_with_config(api_key, config)?;
     
     // the chatgpt api is stateless and does not have any context of previous messages. Therefore
     // the client needs to keep track of the state and add previous messages to each request.
@@ -86,14 +92,30 @@ async fn main() -> Result<()> {
         // add new user input to chat.
         chat.push(Message{role: "user".to_string(), content: input.trim().to_string()});
 
-        let response = client
-            .send_message(input.trim().to_string())
+        let stream = client
+            .send_message_streaming(input.trim().to_string())
             .await?;
 
         // debug!("{:?}", resp_body);
 
         println!(" --- ");
-        println!("GPT-4-32k: {}\n --- ", response.message().content);
+        println!("GPT-4-32k: \n --- ");
+
+        stream.for_each(|each| async move {
+            if let ResponseChunk::Content {
+                delta,
+                response_index: _,
+            } = each
+            {
+                // Printing part of response without the newline
+                print!("{delta}");
+                // Manually flushing the standard output, as `print` macro does not do that
+                stdout().lock().flush().unwrap();
+            }
+        })
+        .await;
+
+        println!();
     }
 
 }
