@@ -1,19 +1,14 @@
 use std::io::{self, BufRead};
-use serde::{Serialize, Deserialize};
-use serde_json::{self, Value};
-use reqwest::{self, header};
 use std::io::{stdout, Write};
 use std::fs;
 use chatgpt::prelude::*;
 use chatgpt::types::*;
-use tokio::*;
 use futures_util::StreamExt;
 
 #[macro_use]
 extern crate log;
 extern crate env_logger;
 
-const ENDPOINT: &str = "https://api.openai.com/v1/chat/completions";
 const CONTEXT_LOCATION: &str = "/Users/simonschaefer/dev/ai-projects/chat-bot/src/main.rs";
 
 
