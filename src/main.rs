@@ -1,65 +1,40 @@
 use std::io::{self, BufRead};
-use serde::{Serialize, Deserialize};
-use serde_json::{self, Value};
-use reqwest::{self, header};
-use std::io::Write;
+use std::io::{stdout, Write};
 use std::fs;
+use chatgpt::prelude::*;
+use chatgpt::types::*;
+use futures_util::StreamExt;
+
 #[macro_use]
 extern crate log;
 extern crate env_logger;
 
-const ENDPOINT: &str = "https://api.openai.com/v1/chat/completions";
 const CONTEXT_LOCATION: &str = "/Users/simonschaefer/dev/ai-projects/chat-bot/src/main.rs";
 
-// Represents the  messages that the client and the LLM (Large Language Model) exchange.
-#[derive(Serialize, Deserialize, Clone)]
-struct Message {
-    // who sent the message. The 'user' or the 'system', aka the LLM.
-    role: String,
-    content: String,
-}
 
-// API request
-#[derive(Serialize, Clone)]
-struct ChatRequest {
-    // all messages the LLM should interpret.
-    messages: Vec<Message>,
-    model: String,
-    max_tokens: i32,
-    temperature: f64,
-    top_p: f64,
-    frequency_penalty: f64,
-    presence_penalty: f64,
-}
+#[tokio::main]
+async fn main() -> Result<()> {
 
-// API response
-#[derive(Deserialize, Clone)]
-struct ChatResponse {
-    choices: Vec<Choice>,
-}
-
-#[derive(Deserialize, Clone)]
-struct Choice {
-    message: Message,
-}
-
-fn main() -> Result<(), Box<dyn std::error::Error>> {
-   
     env_logger::init();
 
     let api_key = read_api_key()?;
     debug!("api key: {}", api_key);
 
-    let client = reqwest::blocking::Client::builder()
-        .timeout(std::time::Duration::from_secs(180))
-        .build()?;
+    let config = ModelConfiguration {
+        engine: ChatGPTEngine::Gpt4,
+        ..Default::default()
+    };
+
+    let client = ChatGPT::new_with_config(api_key, config)?;
 
     // the chatgpt api is stateless and does not have any context of previous messages. Therefore
     // the client needs to keep track of the state and add previous messages to each request.
-    let mut chat_history: Vec<(Message, Message)> = vec![];
-    let chat_context = load_context_from_file_and_return_as_messages();
-    chat_history.push(chat_context);
-
+    let mut conversation: Conversation = client.new_conversation();
+    
+    // Add the file context to the conversation
+    let history = load_context_from_file_and_return_as_messages();
+    conversation.history.push(history.0);
+    conversation.history.push(history.1);
 
     let stdin = io::stdin();
     let mut reader = stdin.lock().lines();
@@ -75,49 +50,48 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             continue;
         }
 
-        // add previously sent messages to the chat.
-        let mut chat: Vec<Message>  = chat_history.iter()
-            .flat_map(|(req, resp)| vec![req.clone(), resp.clone()])
-            .collect();
+        let mut stream = conversation
+            .send_message_streaming(input.trim().to_string())
+            .await?;
 
-        // add new user input to chat.
-        chat.push(Message{role: "user".to_string(), content: input.trim().to_string()});
+        // debug!("{:?}", resp_body);
 
-        let chat_req = ChatRequest {
-            messages: chat,
-            model: "gpt-4".to_string(),
-            max_tokens: 1000,
-            temperature: 0.7,
-            top_p: 1.0,
-            frequency_penalty: 0.0,
-            presence_penalty: 0.0,
-        };
-        let req_body = serde_json::to_string(&chat_req)?;
+        println!(" --- ");
+        println!("GPT-4-8k: \n");
 
-        let resp = client.post(ENDPOINT)
-            .header(header::AUTHORIZATION, format!("Bearer {}", api_key))
-            .header(header::CONTENT_TYPE, "application/json")
-            .body(req_body.clone())
-            .send()?;
-
-        let resp_body: Value = resp.json()?;
-       
-        debug!("{:?}", resp_body);
-
-        let chat_resp: ChatResponse = serde_json::from_value(resp_body.clone())?;
-
-        if let Some(choice) = chat_resp.choices.first() {
-            chat_history.push( (chat_req.messages.first().unwrap().clone(), choice.message.clone()) );
-            println!(" --- ");
-            println!("GPT-4-32k: {}\n --- ", choice.message.content);
-        } else {
-            error!("Error: {:?}", resp_body);
+        // We want to stream the response from chatgpt to the console. This means that we have to
+        // jump through some hoops, to store the complete response and save it to the
+        // conversation.history.
+        let mut output: Vec<ResponseChunk> = Vec::new();
+        
+        while let Some(chunk) = stream.next().await {
+            match chunk {
+                ResponseChunk::Content {
+                    delta,
+                    response_index,
+                } => {
+                    // Printing part of response without the newline
+                    print!("{delta}");
+                    // Manually flushing the standard output, as `print` macro does not do that
+                    stdout().lock().flush().unwrap();
+                    
+                    output.push(ResponseChunk::Content {
+                        delta,
+                        response_index,
+                    });
+                }
+                // We don't really care about other types, other than parsing them into a ChatMessage later
+                other => output.push(other),
+            }
         }
+        println!("\n---");
+       // Parsing ChatMessage from the response chunks and saving it to the conversation history
+        let messages = ChatMessage::from_response_chunks(output);
+        conversation.history.push(messages[0].to_owned());    
     }
-
 }
 
-fn read_api_key() -> Result<String, Box<dyn std::error::Error>> {
+fn read_api_key() -> Result<String> {
     let api_key_file = std::env::var("HOME")? + "/dev/GPT-KEY";
     let api_key_bytes = std::fs::read_to_string(api_key_file)?;
     Ok(api_key_bytes.trim().to_string())
@@ -125,7 +99,7 @@ fn read_api_key() -> Result<String, Box<dyn std::error::Error>> {
 
 // the context is established by loading the file that is the context and creating a 'user' message
 // from it. We also add a placeholder response from the system to it so we keep req/resp pairs.'
- fn load_context_from_file_and_return_as_messages() -> (Message, Message) {
+ fn load_context_from_file_and_return_as_messages() -> (ChatMessage, ChatMessage) {
     let context_text = match fs::read_to_string(CONTEXT_LOCATION) {
         Ok(text) => text,
         Err(e) => {
@@ -134,13 +108,13 @@ fn read_api_key() -> Result<String, Box<dyn std::error::Error>> {
         }
     };
 
-    let message_with_context = Message {
-        role: "user".to_string(),
+    let message_with_context = ChatMessage {
+        role: Role::User,
         content: format!("Remember the following code. Don't do anything with it until my next prompt yet.\n\n---\n\n{}", context_text)
     };
 
-    let first_response = Message {
-        role: "system".to_string(),
+    let first_response = ChatMessage {
+        role: Role::System,
         content: "Alright, I won't do anything with the code yet. Just let me know what you would like me to do with it.".to_string()
     };
 

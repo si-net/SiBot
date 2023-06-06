@@ -6,8 +6,11 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+chatgpt_rs = { version ="1.1.8", features = ["streams"]}
 env_logger = "0.10.0"
+futures-util = "0.3.28"
 log = "0.4.17"
 reqwest = { version = "0.11.4", features = ["json", "blocking"] }
 serde = { version = "1.0.133", features = ["derive"] }
 serde_json = "1.0.68"
+tokio = "1.28.2"
