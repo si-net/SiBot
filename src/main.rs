@@ -62,13 +62,12 @@ async fn main() -> Result<()> {
     };
 
     let client = ChatGPT::new_with_config(api_key, config)?;
-    
+
     // the chatgpt api is stateless and does not have any context of previous messages. Therefore
     // the client needs to keep track of the state and add previous messages to each request.
-    let mut chat_history: Vec<(Message, Message)> = vec![];
-    let chat_context = load_context_from_file_and_return_as_messages();
-    chat_history.push(chat_context);
+    let mut conversation: Conversation = client.new_conversation();
 
+    // Add the file context to the conversation
 
     let stdin = io::stdin();
     let mut reader = stdin.lock().lines();
@@ -84,40 +83,45 @@ async fn main() -> Result<()> {
             continue;
         }
 
-        // add previously sent messages to the chat.
-        let mut chat: Vec<Message>  = chat_history.iter()
-            .flat_map(|(req, resp)| vec![req.clone(), resp.clone()])
-            .collect();
-
-        // add new user input to chat.
-        chat.push(Message{role: "user".to_string(), content: input.trim().to_string()});
-
-        let stream = client
+        let mut stream = conversation
             .send_message_streaming(input.trim().to_string())
             .await?;
 
         // debug!("{:?}", resp_body);
 
         println!(" --- ");
-        println!("GPT-4-32k: \n --- ");
+        println!("GPT-4-8k: \n");
 
-        stream.for_each(|each| async move {
-            if let ResponseChunk::Content {
-                delta,
-                response_index: _,
-            } = each
-            {
-                // Printing part of response without the newline
-                print!("{delta}");
-                // Manually flushing the standard output, as `print` macro does not do that
-                stdout().lock().flush().unwrap();
+        // We want to stream the response from chatgpt to the console. This means that we have to
+        // jump through some hoops, to store the complete response and save it to the
+        // conversation.history.
+        let mut output: Vec<ResponseChunk> = Vec::new();
+        
+        while let Some(chunk) = stream.next().await {
+            match chunk {
+                ResponseChunk::Content {
+                    delta,
+                    response_index,
+                } => {
+                    // Printing part of response without the newline
+                    print!("{delta}");
+                    // Manually flushing the standard output, as `print` macro does not do that
+                    stdout().lock().flush().unwrap();
+                    
+                    output.push(ResponseChunk::Content {
+                        delta,
+                        response_index,
+                    });
+                }
+                // We don't really care about other types, other than parsing them into a ChatMessage later
+                other => output.push(other),
             }
-        })
-        .await;
-
-        println!();
+        }
+        println!("\n---");
+       // Parsing ChatMessage from the response chunks and saving it to the conversation history
+        let messages = ChatMessage::from_response_chunks(output);
+        conversation.history.push(messages[0].to_owned());    
     }
-
 }
 
 fn read_api_key() -> Result<String> {
