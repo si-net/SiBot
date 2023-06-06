@@ -5,6 +5,7 @@ use reqwest::{self, header};
 use std::io::{stdout, Write};
 use std::fs;
 use chatgpt::prelude::*;
+use chatgpt::types::*;
 use tokio::*;
 use futures_util::StreamExt;
 
@@ -14,38 +15,6 @@ extern crate env_logger;
 
 const ENDPOINT: &str = "https://api.openai.com/v1/chat/completions";
 const CONTEXT_LOCATION: &str = "/Users/simonschaefer/dev/ai-projects/chat-bot/src/main.rs";
-
-// Represents the  messages that the client and the LLM (Large Language Model) exchange.
-#[derive(Serialize, Deserialize, Clone)]
-struct Message {
-    // who sent the message. The 'user' or the 'system', aka the LLM.
-    role: String,
-    content: String,
-}
-
-// API request
-#[derive(Serialize, Clone)]
-struct ChatRequest {
-    // all messages the LLM should interpret.
-    messages: Vec<Message>,
-    model: String,
-    max_tokens: i32,
-    temperature: f64,
-    top_p: f64,
-    frequency_penalty: f64,
-    presence_penalty: f64,
-}
-
-// API response
-#[derive(Deserialize, Clone)]
-struct ChatResponse {
-    choices: Vec<Choice>,
-}
-
-#[derive(Deserialize, Clone)]
-struct Choice {
-    message: Message,
-}
 
 
 #[tokio::main]
@@ -66,8 +35,11 @@ async fn main() -> Result<()> {
     // the chatgpt api is stateless and does not have any context of previous messages. Therefore
     // the client needs to keep track of the state and add previous messages to each request.
     let mut conversation: Conversation = client.new_conversation();
-
+    
     // Add the file context to the conversation
+    let history = load_context_from_file_and_return_as_messages();
+    conversation.history.push(history.0);
+    conversation.history.push(history.1);
 
     let stdin = io::stdin();
     let mut reader = stdin.lock().lines();
@@ -132,7 +104,7 @@ fn read_api_key() -> Result<String> {
 
 // the context is established by loading the file that is the context and creating a 'user' message
 // from it. We also add a placeholder response from the system to it so we keep req/resp pairs.'
- fn load_context_from_file_and_return_as_messages() -> (Message, Message) {
+ fn load_context_from_file_and_return_as_messages() -> (ChatMessage, ChatMessage) {
     let context_text = match fs::read_to_string(CONTEXT_LOCATION) {
         Ok(text) => text,
         Err(e) => {
@@ -141,13 +113,13 @@ fn read_api_key() -> Result<String> {
         }
     };
 
-    let message_with_context = Message {
-        role: "user".to_string(),
+    let message_with_context = ChatMessage {
+        role: Role::User,
         content: format!("Remember the following code. Don't do anything with it until my next prompt yet.\n\n---\n\n{}", context_text)
     };
 
-    let first_response = Message {
-        role: "system".to_string(),
+    let first_response = ChatMessage {
+        role: Role::System,
         content: "Alright, I won't do anything with the code yet. Just let me know what you would like me to do with it.".to_string()
     };
 
