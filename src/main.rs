@@ -4,18 +4,26 @@ use std::fs;
 use chatgpt::prelude::*;
 use chatgpt::types::*;
 use futures_util::StreamExt;
+use std::path::PathBuf;
+use structopt::StructOpt;
 
 #[macro_use]
 extern crate log;
 extern crate env_logger;
 
-const CONTEXT_LOCATION: &str = "/Users/simonschaefer/dev/ai-projects/chat-bot/src/main.rs";
-
+#[derive(Debug, StructOpt)]
+#[structopt(name = "chatgpt-client", about = "A command line client for ChatGPT")]
+struct Opt {
+    #[structopt(long, parse(from_os_str), help = "Path to the file that should be the topic of the conversation", default_value = "/Users/simonschaefer/dev/ai-projects/chat-bot/src/main.rs")]
+    file: PathBuf,
+}
 
 #[tokio::main]
 async fn main() -> Result<()> {
 
     env_logger::init();
+
+    let opt = Opt::from_args();
 
     let api_key = read_api_key()?;
     debug!("api key: {}", api_key);
@@ -32,7 +40,7 @@ async fn main() -> Result<()> {
     let mut conversation: Conversation = client.new_conversation();
     
     // Add the file context to the conversation
-    let history = load_context_from_file_and_return_as_messages();
+    let history = load_context_from_file_and_return_as_messages(opt.file);
     conversation.history.push(history.0);
     conversation.history.push(history.1);
 
@@ -99,11 +107,11 @@ fn read_api_key() -> Result<String> {
 
 // the context is established by loading the file that is the context and creating a 'user' message
 // from it. We also add a placeholder response from the system to it so we keep req/resp pairs.'
- fn load_context_from_file_and_return_as_messages() -> (ChatMessage, ChatMessage) {
-    let context_text = match fs::read_to_string(CONTEXT_LOCATION) {
+ fn load_context_from_file_and_return_as_messages(file_path: PathBuf) -> (ChatMessage, ChatMessage) {
+    let context_text = match fs::read_to_string(&file_path) {
         Ok(text) => text,
         Err(e) => {
-            error!("Error reading chat context from file: {}", e);
+            error!("Error reading chat context from file: {}, {}", file_path.display(), e);
             String::new()
         }
     };
