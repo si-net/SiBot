@@ -29,6 +29,10 @@ We store the complete requests and responses in json. No need to just store part
 
 > As a user I want to be able to quickly distinguish between the sessions I had in the past
 
+> As a user I want to be able to use the contents of my clip board to be properly inserted into the chat window. Right now a line break in my clip board content will be interpreted as an enter terminating signal for the user input
+
+The investigation for this topic can be found at [docs/notes_clip_board_content.md](docs/notes_clip_board_content.md)
+
 > [DONE] As a user I want to be able to add a hardcoded code file as the context for my conversation
 
 > As a user I want to determine the location of the file that is set as the context of my conversation.
