@@ -1,6 +1,7 @@
-use std::io::{self, BufRead};
+use std::io::{self};
 use std::io::{stdout, Write};
 use std::fs;
+use std::io::Read;
 use chatgpt::prelude::*;
 use chatgpt::types::*;
 use futures_util::StreamExt;
@@ -44,15 +45,11 @@ async fn main() -> Result<()> {
     conversation.history.push(history.0);
     conversation.history.push(history.1);
 
-    let stdin = io::stdin();
-    let mut reader = stdin.lock().lines();
-
     // main program loop: exchanges messages between user and LLM.
     loop {
         // wait for user input.
-        println!("You: ");
-        io::stdout().flush()?;
-        let input = reader.next().unwrap()?;
+        println!("You (confirm with double return): ");
+        let input = read_input_until_delimiter();
         let input = input.trim();
         if input.is_empty() {
             continue;
@@ -62,7 +59,7 @@ async fn main() -> Result<()> {
             .send_message_streaming(input.trim().to_string())
             .await?;
 
-        // debug!("{:?}", resp_body);
+        // reintroduce debug logging
 
         println!(" --- ");
         println!("GPT-4-8k: \n");
@@ -127,4 +124,22 @@ fn read_api_key() -> Result<String> {
     };
 
     (message_with_context, first_response)
+}
+
+fn read_input_until_delimiter() -> String {
+    let mut input = String::new();
+    let mut buffer = [0; 1];
+    let delimiter = "\n\n";
+
+    while let Ok(size) = io::stdin().read(&mut buffer) {
+        if size == 0 {
+            break;
+        }
+        input.push(buffer[0] as char);
+        if input.ends_with(delimiter) {
+            input.truncate(input.len() - delimiter.len());
+            break;
+        }
+    }
+    input
 }
