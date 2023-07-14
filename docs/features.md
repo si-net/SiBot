@@ -29,7 +29,7 @@ We store the complete requests and responses in json. No need to just store part
 
 > As a user I want to be able to quickly distinguish between the sessions I had in the past
 
-> As a user I want to be able to use the contents of my clip board to be properly inserted into the chat window. Right now a line break in my clip board content will be interpreted as an enter terminating signal for the user input
+> [DONE] As a user I want to be able to use the contents of my clip board to be properly inserted into the chat window. Right now a line break in my clip board content will be interpreted as an enter terminating signal for the user input
 
 The investigation for this topic can be found at [docs/notes_clip_board_content.md](docs/notes_clip_board_content.md)
 
@@ -38,6 +38,8 @@ The investigation for this topic can be found at [docs/notes_clip_board_content.
 > As a user I want to determine the location of the file that is set as the context of my conversation.
 
 > [DONE] As a user I want to select the file/text content that is set as the context of my conversation, so that I can use the client for any use case.
+
+> [DONE] As a user I want to select multiple files as the context of my conversation, so that I can provide a broader context for my conversation.
 
 > As a user I want dont want to manually select files that should be added to the context, I want that a whole project is present as the context in the LLM, so I can utilize the full power of the model.
 

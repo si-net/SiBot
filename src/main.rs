@@ -1,6 +1,7 @@
-use std::io::{self, BufRead};
+use std::io::{self};
 use std::io::{stdout, Write};
 use std::fs;
+use std::io::Read;
 use chatgpt::prelude::*;
 use chatgpt::types::*;
 use futures_util::StreamExt;
@@ -14,8 +15,8 @@ extern crate env_logger;
 #[derive(Debug, StructOpt)]
 #[structopt(name = "chatgpt-client", about = "A command line client for ChatGPT")]
 struct Opt {
-    #[structopt(long, parse(from_os_str), help = "Path to the file that should be the topic of the conversation", default_value = "/Users/simonschaefer/dev/ai-projects/chat-bot/src/main.rs")]
-    file: PathBuf,
+    #[structopt(long, parse(from_os_str), help = "Path to the files that should be the topic of the conversation. You can specify multiple files.", default_value = "/Users/simonschaefer/dev/ai-projects/chat-bot/src/main.rs")]
+    files: Vec<PathBuf>,
 }
 
 #[tokio::main]
@@ -40,19 +41,15 @@ async fn main() -> Result<()> {
     let mut conversation: Conversation = client.new_conversation();
     
     // Add the file context to the conversation
-    let history = load_context_from_file_and_return_as_messages(opt.file);
+    let history = load_context_from_file_and_return_as_messages(&opt.files);
     conversation.history.push(history.0);
     conversation.history.push(history.1);
-
-    let stdin = io::stdin();
-    let mut reader = stdin.lock().lines();
 
     // main program loop: exchanges messages between user and LLM.
     loop {
         // wait for user input.
-        println!("You: ");
-        io::stdout().flush()?;
-        let input = reader.next().unwrap()?;
+        println!("You (confirm with double return): ");
+        let input = read_input_until_delimiter();
         let input = input.trim();
         if input.is_empty() {
             continue;
@@ -62,7 +59,7 @@ async fn main() -> Result<()> {
             .send_message_streaming(input.trim().to_string())
             .await?;
 
-        // debug!("{:?}", resp_body);
+        // reintroduce debug logging
 
         println!(" --- ");
         println!("GPT-4-8k: \n");
@@ -107,14 +104,18 @@ fn read_api_key() -> Result<String> {
 
 // the context is established by loading the file that is the context and creating a 'user' message
 // from it. We also add a placeholder response from the system to it so we keep req/resp pairs.'
- fn load_context_from_file_and_return_as_messages(file_path: PathBuf) -> (ChatMessage, ChatMessage) {
-    let context_text = match fs::read_to_string(&file_path) {
-        Ok(text) => text,
-        Err(e) => {
-            error!("Error reading chat context from file: {}, {}", file_path.display(), e);
-            String::new()
-        }
-    };
+ fn load_context_from_file_and_return_as_messages(file_paths: &[PathBuf]) -> (ChatMessage, ChatMessage) {
+    
+     let context_text = file_paths
+         .iter()
+         .filter_map(|file_path| {
+             fs::read_to_string(file_path)
+                 .map_err(|e| {error!("Error reading chat context from file: {}, {}", file_path.display(), e);})
+                 .ok()
+         })
+         .collect::<Vec<_>>()
+         .join("\n\n---\n\n");
+
 
     let message_with_context = ChatMessage {
         role: Role::User,
@@ -127,4 +128,22 @@ fn read_api_key() -> Result<String> {
     };
 
     (message_with_context, first_response)
+}
+
+fn read_input_until_delimiter() -> String {
+    let mut input = String::new();
+    let mut buffer = [0; 1];
+    let delimiter = "\n\n";
+
+    while let Ok(size) = io::stdin().read(&mut buffer) {
+        if size == 0 {
+            break;
+        }
+        input.push(buffer[0] as char);
+        if input.ends_with(delimiter) {
+            input.truncate(input.len() - delimiter.len());
+            break;
+        }
+    }
+    input
 }
