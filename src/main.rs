@@ -17,6 +17,8 @@ extern crate env_logger;
 struct Opt {
     #[structopt(long, parse(from_os_str), help = "Path to the files that should be the topic of the conversation. You can specify multiple files.", default_value = "/Users/simonschaefer/dev/ai-projects/chat-bot/src/main.rs")]
     files: Vec<PathBuf>,
+    #[structopt(long, help = "Do not set any contetxt of the conversation, use this if you want to have a clear chat.")]
+    no_context: bool
 }
 
 #[tokio::main]
@@ -41,10 +43,12 @@ async fn main() -> Result<()> {
     let mut conversation: Conversation = client.new_conversation();
     
     // Add the file context to the conversation
-    let history = load_context_from_file_and_return_as_messages(&opt.files);
-    conversation.history.push(history.0);
-    conversation.history.push(history.1);
-
+    let useContext = !opt.no_context;
+    if useContext {
+        let history = load_context_from_file_and_return_as_messages(&opt.files);
+        conversation.history.push(history.0);
+        conversation.history.push(history.1);
+    }
     // main program loop: exchanges messages between user and LLM.
     loop {
         // wait for user input.
