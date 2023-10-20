@@ -15,7 +15,7 @@ extern crate env_logger;
 #[derive(Debug, StructOpt)]
 #[structopt(name = "chatgpt-client", about = "A command line client for ChatGPT")]
 struct Opt {
-    #[structopt(long, parse(from_os_str), help = "Path to the files that should be the topic of the conversation. You can specify multiple files.", default_value = "/Users/simonschaefer/dev/ai-projects/chat-bot/src/main.rs")]
+    #[structopt(long, parse(from_os_str), help = "Path to the files that should be the topic of the conversation. You can specify multiple files.", default_value = "/Users/simonschafer/dev/ai-projects/chat-bot/src/main.rs")]
     files: Vec<PathBuf>,
     #[structopt(long, help = "Do not set any contetxt of the conversation, use this if you want to have a clear chat.")]
     no_context: bool
@@ -101,7 +101,8 @@ async fn main() -> Result<()> {
 }
 
 fn read_api_key() -> Result<String> {
-    let api_key_file = std::env::var("HOME")? + "/dev/GPT-KEY";
+    let api_key_file = std::env::var("HOME")? + "/dev/ai-projects/GPT-KEY";
+    debug!("{}", api_key_file);
     let api_key_bytes = std::fs::read_to_string(api_key_file)?;
     Ok(api_key_bytes.trim().to_string())
 }
