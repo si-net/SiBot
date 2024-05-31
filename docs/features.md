@@ -35,7 +35,7 @@ The investigation for this topic can be found at [docs/notes_clip_board_content.
 
 > [DONE] As a user I want to be able to add a hardcoded code file as the context for my conversation
 
-> As a user I want to determine the location of the file that is set as the context of my conversation.
+> [DONE] As a user I want to determine the location of the file that is set as the context of my conversation.
 
 > [DONE] As a user I want to select the file/text content that is set as the context of my conversation, so that I can use the client for any use case.
 
@@ -51,6 +51,7 @@ The investigation for this topic can be found at [docs/notes_clip_board_content.
 
 > Look into openAI embeddings for the file context. Apparently embedding are a cheaper way of getting 'context' to a chat. The text (files) that the user wants to work with would be somehow tokenized and pre trained and embedded into the openai model, I don't really undestsand yet how this works. The benefit is that this is chaper, consumes no token limit and ..
 
+The above assumption is wrong, embeddings are a different concept.
 
 ### Notes
 

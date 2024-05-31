@@ -15,18 +15,17 @@ extern crate env_logger;
 #[derive(Debug, StructOpt)]
 #[structopt(name = "chatgpt-client", about = "A command line client for ChatGPT")]
 struct Opt {
-    #[structopt(long, parse(from_os_str), help = "Path to the files that should be the topic of the conversation. You can specify multiple files.", default_value = "/Users/simonschafer/dev/ai-projects/chat-bot/src/main.rs")]
+    #[structopt(long, parse(from_os_str), help = "Path to the files that should be the topic of the conversation. You can specify multiple files.")]
     files: Vec<PathBuf>,
-    #[structopt(long, help = "Do not set any contetxt of the conversation, use this if you want to have a clear chat.")]
-    no_context: bool
+    #[structopt(long, help = "Include the chatbot's own code in the context.")]
+    self_locate: bool,
 }
 
 #[tokio::main]
 async fn main() -> Result<()> {
-
     env_logger::init();
-
-    let opt = Opt::from_args();
+    
+    let mut opt = Opt::from_args();
 
     let api_key = read_api_key()?;
     debug!("api key: {}", api_key);
@@ -42,13 +41,23 @@ async fn main() -> Result<()> {
     // the client needs to keep track of the state and add previous messages to each request.
     let mut conversation: Conversation = client.new_conversation();
     
-    // Add the file context to the conversation
-    let useContext = !opt.no_context;
-    if useContext {
+    // if the self locate option is set we try to locate the path of the main.rs source files that defines this chatbot.
+    if opt.self_locate {
+        // todo the code below is not acceptable.
+	let mut self_path = std::env::current_exe()?;
+	self_path.pop();
+	self_path.pop();
+	self_path.pop();
+ 	self_path.push("src/main.rs");
+	opt.files = vec![self_path];
+    }
+
+    if !opt.files.is_empty() {
         let history = load_context_from_file_and_return_as_messages(&opt.files);
         conversation.history.push(history.0);
         conversation.history.push(history.1);
     }
+
     // main program loop: exchanges messages between user and LLM.
     loop {
         // wait for user input.
