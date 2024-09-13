@@ -31,7 +31,7 @@ async fn main() -> Result<()> {
     debug!("api key: {}", api_key);
 
     let config = ModelConfiguration {
-        engine: ChatGPTEngine::Custom("gpt-4o"),
+        engine: ChatGPTEngine::Custom("o1-preview"),
         ..Default::default()
     };
 
